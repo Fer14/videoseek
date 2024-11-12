@@ -3,8 +3,6 @@ from PIL import Image
 import re
 import whisper
 import yt_dlp
-import unicodedata
-import Levenshtein as lev
 import torch
 from sentence_transformers import SentenceTransformer, SimilarityFunction
 
