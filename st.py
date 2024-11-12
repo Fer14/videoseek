@@ -116,6 +116,3 @@ if st.button("Submit"):
 </div>
             """
             st.components.v1.html(youtube_embed_html, height=700, width=700)
-
-
-st.launch(share=True)  # This will give you a temporary shareable URL
