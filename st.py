@@ -27,10 +27,18 @@ def download_youtube_audio(url, output_file="audio2.m4a"):
     # Download and extract audio
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
+            info_dict = ydl.extract_info(url, download=False)
+            duration_seconds = info_dict["duration"]
+            if duration_seconds <= 1800:
+                ydl.download([url])
+            else:
+                st.error(
+                    "Are you trying to break my website? 🤨 Video is too long! Update your plan or send me a bizum "
+                )
     except Exception as e:
         st.error("Failed to download audio. Please check the URL and try again.")
         st.stop()  # Stop further execution if download fails
+
     return output_file
 
 
@@ -45,6 +53,7 @@ def transcribe_audio(audio_file, model="tiny"):
         st.error("Failed to transcribe audio.")
         st.stop()
         print(e)
+        progress_bar.progress(0)
 
 
 def find_prompt_in_transcription(segments, prompt, model):
@@ -107,7 +116,9 @@ if st.button("Submit"):
         progress_bar.progress(60, "Matching text..")
         # st.success("Audio downloaded and transcribed successfully!")
         model = load_sentence_transformer_model()
-        result = find_prompt_in_transcription(segments, prompt_input, model)
+        result = find_prompt_in_transcription(
+            segments, prompt_input, model, progress_bar
+        )
         start_time = segments[torch.argmax(result).item()]["start"]
         progress_bar.progress(90, "Setting up the video")
 
