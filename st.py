@@ -75,7 +75,7 @@ def load_sentence_transformer_model():
         st.stop()
 
 
-st.set_page_config(page_title="VideoSeek", page_icon="🌐")
+st.set_page_config(page_title="VideoSeek", page_icon="👁️‍🗨️")
 
 
 logo = Image.open("logo.png")
