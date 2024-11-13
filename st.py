@@ -5,9 +5,13 @@ import whisper
 import yt_dlp
 import torch
 from sentence_transformers import SentenceTransformer, SimilarityFunction
+import time
+import os
 
 
 def download_youtube_audio(url, output_file="audio2.m4a"):
+    timestamp = int(time.time())  # Unix timestamp
+    output_file = f"audio_{timestamp}.m4a"
     # Define yt_dlp options
     ydl_opts = {
         "format": "m4a/bestaudio/best",
@@ -33,7 +37,6 @@ def download_youtube_audio(url, output_file="audio2.m4a"):
 def transcribe_audio(audio_file, model="tiny"):
     try:
         model = whisper.load_model(model)
-
         # Transcribe audio
         transcription = model.transcribe(audio_file)
         return transcription["segments"]
@@ -41,6 +44,7 @@ def transcribe_audio(audio_file, model="tiny"):
     except Exception as e:
         st.error("Failed to transcribe audio.")
         st.stop()
+        print(e)
 
 
 def find_prompt_in_transcription(segments, prompt, model):
@@ -91,14 +95,23 @@ if st.button("Submit"):
         # Example: Display a response message
         st.success("Your input has been received!")
 
-        st.info("Downloading audio...")
+        progress_bar = st.progress(0)
+        progress_bar.progress(30, "Downloading audio...")
+        # st.info("Downloading audio...")
         audio_file = download_youtube_audio(url_input)
-        st.info("Transcribing audio...")
+
+        progress_bar.progress(60, "Transcribing audio...")
+        # st.info("Transcribing audio...")
         segments = transcribe_audio(audio_file)
-        st.success("Audio downloaded and transcribed successfully!")
+
+        progress_bar.progress(60, "Matching text..")
+        # st.success("Audio downloaded and transcribed successfully!")
         model = load_sentence_transformer_model()
         result = find_prompt_in_transcription(segments, prompt_input, model)
         start_time = segments[torch.argmax(result).item()]["start"]
+        progress_bar.progress(90, "Setting up the video")
+
+        os.remove(audio_file)
 
         youtube_url_match = re.search(r"v=([A-Za-z0-9_-]+)", url_input)
         if youtube_url_match:
@@ -116,3 +129,7 @@ if st.button("Submit"):
 </div>
             """
             st.components.v1.html(youtube_embed_html, height=700, width=700)
+            progress_bar.progress(
+                100,
+                "Success!",
+            )
