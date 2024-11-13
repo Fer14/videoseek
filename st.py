@@ -30,7 +30,7 @@ def download_youtube_audio(url, output_file="audio2.m4a"):
     return output_file
 
 
-def transcribe_audio(audio_file, model="base"):
+def transcribe_audio(audio_file, model="tiny"):
     try:
         model = whisper.load_model(model)
 
