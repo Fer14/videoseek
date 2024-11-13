@@ -10,7 +10,7 @@ VideoSeek is an intelligent video search tool that allows users to find specific
 It is currently hosted on streamlit, you can test it [here](https://videoseek.streamlit.app/).
 
 
-## 🌟 Features
+## Features
 
 - **YouTube Video Processing**: Automatically downloads and processes audio from YouTube videos
 - **Natural Language Search**: Find specific moments using everyday language
