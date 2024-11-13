@@ -92,17 +92,17 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 👏 Acknowledgments
+## Acknowledgments
 
 - OpenAI for the Whisper model
 - Sentence Transformers team
 - Streamlit community
 - yt-dlp maintainers
 
-## 📧 Contact
+## Contact
 
 For support or queries, please open an issue in the GitHub repository.
 
 ---
 
-Made with ❤️ by [Your Name]
+Made with ❤️ by [Fer14]
