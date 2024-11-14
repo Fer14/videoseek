@@ -117,7 +117,7 @@ if st.button("Submit"):
         # st.success("Audio downloaded and transcribed successfully!")
         model = load_sentence_transformer_model()
         result = find_prompt_in_transcription(
-            segments, prompt_input, model, progress_bar
+            segments, prompt_input, model
         )
         start_time = segments[torch.argmax(result).item()]["start"]
         progress_bar.progress(90, "Setting up the video")
