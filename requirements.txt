@@ -1,6 +1,7 @@
 streamlit
 torch
 openai-whisper
-yt-dlp
+yt-dlp[default]
+deno
 sentence_transformers
 pillow
