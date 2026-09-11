@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+audio_*.m4a
+*.part

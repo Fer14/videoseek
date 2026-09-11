@@ -39,10 +39,31 @@ cd videoseek
 pip install -r requirements.txt
 ```
 
-3. Run the application:
+3. Run the web application:
 ```bash
-streamlit run app.py
+streamlit run st.py
 ```
+
+### Command line
+
+You can also run VideoSeek from a terminal, without the web UI:
+
+```bash
+python cli.py "https://www.youtube.com/watch?v=s9w3gtgvNSU" "embeddings"
+```
+
+```
+Best match at 4:45  (score 0.657)
+  "even more numbers which we call embeddings and now we have a sequence of embeddings ..."
+  https://www.youtube.com/watch?v=s9w3gtgvNSU&t=285s
+```
+
+Options: `--top N` to show more candidates, `--model base` for a bigger Whisper
+model, `--cookies cookies.txt` / `--proxy URL` when running from a cloud IP that
+YouTube blocks. See `python cli.py --help`.
+
+> **Note:** since mid 2024 YouTube blocks downloads from cloud providers, so the
+> hosted Streamlit app usually fails. Running locally works.
 
 ## Usage
 
