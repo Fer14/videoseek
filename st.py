@@ -183,6 +183,23 @@ st.image(logo, use_container_width=True)
 st.title("URL and Prompt Input App")
 st.write("Enter a URL and a what do you want to seek in it")
 
+st.warning(
+    """
+**Heads up: this app may not be able to download YouTube videos anymore.**
+
+Since mid 2024 YouTube blocks download requests coming from cloud providers
+(it answers *"Sign in to confirm you're not a bot"* and later returns
+*HTTP 403* on the audio download). Home connections are mostly spared, which is
+why VideoSeek works when run locally but usually fails on this Streamlit Cloud
+deployment. Many Streamlit and Hugging Face apps built on
+[yt-dlp](https://github.com/yt-dlp/yt-dlp) stopped working at that point.
+
+To use VideoSeek reliably, clone the
+[repository](https://github.com/Fer14/videoseek) and run it on your own machine.
+    """,
+    icon="⚠️",
+)
+
 # Create input fields
 url_input = st.text_input(
     "Enter URL", placeholder="https://www.youtube.com/watch?v=zYQP1v8etDU"
