@@ -41,11 +41,29 @@ def _yt_dlp_extra_opts():
     return opts
 
 
+def _diagnostics():
+    deno = shutil.which("deno") or os.path.join(sys.prefix, "bin", "deno")
+    return (
+        f"yt-dlp {yt_dlp.version.__version__}, python {sys.version.split()[0]}, "
+        f"deno {'found' if os.path.exists(deno) else 'NOT found'} at {deno}"
+    )
+
+
+# Attempt order. YouTube requires a "proof of origin" token for the default web
+# clients when the request comes from a datacenter IP (Streamlit Cloud), which
+# shows up as "HTTP Error 403: Forbidden" on the media download. The
+# web_embedded client does not require that token, so retry with it.
+_CLIENT_ATTEMPTS = [
+    {},  # yt-dlp defaults
+    {"extractor_args": {"youtube": {"player_client": ["web_embedded"]}}},
+]
+
+
 def download_youtube_audio(url, output_file="audio2.m4a"):
     timestamp = int(time.time())  # Unix timestamp
     output_file = f"audio_{timestamp}.m4a"
     # Define yt_dlp options
-    ydl_opts = {
+    base_opts = {
         "format": "m4a/bestaudio/best",
         "postprocessors": [
             {
@@ -58,27 +76,36 @@ def download_youtube_audio(url, output_file="audio2.m4a"):
         **_yt_dlp_extra_opts(),
     }
 
-    # Download and extract audio
-    try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info_dict = ydl.extract_info(url, download=False)
-            duration_seconds = info_dict["duration"]
-            if duration_seconds <= 1800:
+    errors = []
+    for attempt in _CLIENT_ATTEMPTS:
+        ydl_opts = {**base_opts, **attempt}
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info_dict = ydl.extract_info(url, download=False)
+                duration_seconds = info_dict["duration"]
+                if duration_seconds > 1800:
+                    st.error(
+                        "Are you trying to break my website? 🤨 Video is too long! Update your plan or send me a bizum "
+                    )
+                    st.stop()
                 ydl.download([url])
-            else:
-                st.error(
-                    "Are you trying to break my website? 🤨 Video is too long! Update your plan or send me a bizum "
-                )
-                st.stop()
-    except Exception as e:
-        # Log the real error so it shows up in the Streamlit Cloud logs
-        print(f"[yt-dlp] {type(e).__name__}: {e}", file=sys.stderr)
-        st.error("Failed to download audio. Please check the URL and try again.")
-        with st.expander("Error details"):
-            st.code(str(e))
-        st.stop()  # Stop further execution if download fails
+            return output_file
+        except Exception as e:
+            client = attempt.get("extractor_args", {}).get("youtube", {}).get(
+                "player_client", ["default"]
+            )
+            msg = f"[client={','.join(client)}] {type(e).__name__}: {e}"
+            errors.append(msg)
+            # Log the real error so it shows up in the Streamlit Cloud logs
+            print(f"[yt-dlp] {msg}", file=sys.stderr)
+            for f in (output_file, output_file + ".part"):
+                if os.path.exists(f):
+                    os.remove(f)
 
-    return output_file
+    st.error("Failed to download audio. Please check the URL and try again.")
+    with st.expander("Error details"):
+        st.code("\n\n".join(errors) + "\n\n" + _diagnostics())
+    st.stop()  # Stop further execution if download fails
 
 
 def transcribe_audio(audio_file, model="tiny"):
