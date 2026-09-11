@@ -10,6 +10,7 @@ import os
 import sys
 import shutil
 import tempfile
+import subprocess
 
 
 def _yt_dlp_extra_opts():
@@ -41,11 +42,39 @@ def _yt_dlp_extra_opts():
     return opts
 
 
+class _CollectLogger:
+    """yt-dlp logger that keeps warnings/errors so we can show them to the user."""
+
+    def __init__(self):
+        self.lines = []
+
+    def debug(self, msg):
+        if msg.startswith("[debug] ") or "[jsc" in msg or "[pot" in msg:
+            self.lines.append(msg)
+
+    def info(self, msg):
+        pass
+
+    def warning(self, msg):
+        self.lines.append(f"WARNING: {msg}")
+        print(f"[yt-dlp] WARNING: {msg}", file=sys.stderr)
+
+    def error(self, msg):
+        self.lines.append(f"ERROR: {msg}")
+        print(f"[yt-dlp] ERROR: {msg}", file=sys.stderr)
+
+
 def _diagnostics():
     deno = shutil.which("deno") or os.path.join(sys.prefix, "bin", "deno")
+    try:
+        deno_ver = subprocess.run(
+            [deno, "--version"], capture_output=True, text=True, timeout=20
+        ).stdout.splitlines()[0]
+    except Exception as e:
+        deno_ver = f"deno failed to run: {type(e).__name__}: {e}"
     return (
         f"yt-dlp {yt_dlp.version.__version__}, python {sys.version.split()[0]}, "
-        f"deno {'found' if os.path.exists(deno) else 'NOT found'} at {deno}"
+        f"{deno_ver} at {deno}"
     )
 
 
@@ -78,7 +107,8 @@ def download_youtube_audio(url, output_file="audio2.m4a"):
 
     errors = []
     for attempt in _CLIENT_ATTEMPTS:
-        ydl_opts = {**base_opts, **attempt}
+        logger = _CollectLogger()
+        ydl_opts = {**base_opts, **attempt, "logger": logger}
         try:
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info_dict = ydl.extract_info(url, download=False)
@@ -95,6 +125,8 @@ def download_youtube_audio(url, output_file="audio2.m4a"):
                 "player_client", ["default"]
             )
             msg = f"[client={','.join(client)}] {type(e).__name__}: {e}"
+            if logger.lines:
+                msg += "\n  " + "\n  ".join(logger.lines)
             errors.append(msg)
             # Log the real error so it shows up in the Streamlit Cloud logs
             print(f"[yt-dlp] {msg}", file=sys.stderr)
