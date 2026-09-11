@@ -7,6 +7,38 @@ import torch
 from sentence_transformers import SentenceTransformer, SimilarityFunction
 import time
 import os
+import sys
+import shutil
+import tempfile
+
+
+def _yt_dlp_extra_opts():
+    """Options that make yt-dlp work from a cloud host (Streamlit Community Cloud).
+
+    - JS runtime: yt-dlp needs one for full YouTube support. The `deno` pip
+      package installs a binary into the venv's bin dir, so point at it directly.
+    - Cookies: YouTube blocks datacenter IPs with "Sign in to confirm you're not
+      a bot". Store a Netscape-format cookies.txt in st.secrets["YOUTUBE_COOKIES"]
+      to get past that. Optionally set st.secrets["YOUTUBE_PROXY"].
+    """
+    opts = {}
+
+    deno = shutil.which("deno") or os.path.join(sys.prefix, "bin", "deno")
+    if os.path.exists(deno):
+        opts["js_runtimes"] = {"deno": {"path": deno}}
+
+    cookies = st.secrets.get("YOUTUBE_COOKIES") if hasattr(st, "secrets") else None
+    if cookies:
+        cookie_path = os.path.join(tempfile.gettempdir(), "yt_cookies.txt")
+        with open(cookie_path, "w") as f:
+            f.write(cookies)
+        opts["cookiefile"] = cookie_path
+
+    proxy = st.secrets.get("YOUTUBE_PROXY") if hasattr(st, "secrets") else None
+    if proxy:
+        opts["proxy"] = proxy
+
+    return opts
 
 
 def download_youtube_audio(url, output_file="audio2.m4a"):
@@ -22,6 +54,8 @@ def download_youtube_audio(url, output_file="audio2.m4a"):
             }
         ],
         "outtmpl": output_file,  # Save output file as specified
+        "noplaylist": True,
+        **_yt_dlp_extra_opts(),
     }
 
     # Download and extract audio
@@ -35,8 +69,13 @@ def download_youtube_audio(url, output_file="audio2.m4a"):
                 st.error(
                     "Are you trying to break my website? 🤨 Video is too long! Update your plan or send me a bizum "
                 )
+                st.stop()
     except Exception as e:
+        # Log the real error so it shows up in the Streamlit Cloud logs
+        print(f"[yt-dlp] {type(e).__name__}: {e}", file=sys.stderr)
         st.error("Failed to download audio. Please check the URL and try again.")
+        with st.expander("Error details"):
+            st.code(str(e))
         st.stop()  # Stop further execution if download fails
 
     return output_file
